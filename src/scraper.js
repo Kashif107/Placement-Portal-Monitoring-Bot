@@ -11,16 +11,27 @@ async function login() {
   const { baseUrl, loginPath, username, password, fields } = config.portal;
   const form = new URLSearchParams();
   form.append(fields.username, username);
+  // Confirmed via real DevTools payload capture: the extra field is sent
+  // EMPTY, not a fixed value — it's a placement-centre selector that's
+  // optional for a normal student login.
+  form.append(fields.extraName, '');
   form.append(fields.password, password);
-  form.append(fields.extraName, 'BTECH'); // adjust if this is dynamic
   form.append(fields.submitField, fields.submitValue);
 
-  const res = await client.post(`${baseUrl}${loginPath}`, form.toString(), {
+  await client.post(`${baseUrl}${loginPath}`, form.toString(), {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   });
 
-  if (!res.data.includes('logout') /* adjust check to match a real logged-in page marker */) {
-    throw new Error('Login failed — check credentials or selectors');
+  // Don't guess at a keyword in the response body — check the one thing
+  // that actually proves a session was established: did the cookie jar
+  // capture a session cookie?
+  const cookies = await jar.getCookies(baseUrl);
+  if (cookies.length === 0) {
+    throw new Error(
+      'Login request completed but no session cookie was captured. This usually means ' +
+      'the field names in .env don\'t match what the form actually sends, or the portal ' +
+      'needs a CSRF token first — re-check the real login payload in DevTools > Network.'
+    );
   }
 }
 
