@@ -1,8 +1,11 @@
 const nodemailer = require('nodemailer');
 const config = require('./config');
 
+// mailer/notify.js
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // STARTTLS, not implicit TLS
   auth: { user: config.mail.user, pass: config.mail.appPassword },
 });
 
